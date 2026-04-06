@@ -1,0 +1,6 @@
+@StockManagementApi_HostAddress = http://localhost:5031
+
+GET {{StockManagementApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
