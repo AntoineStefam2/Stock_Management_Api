@@ -1,0 +1,73 @@
+@model IEnumerable<StockFlow.Application.DTOs.CompanyDto>
+@{ ViewData["Title"] = "Company Admin"; }
+
+<div class="view-container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Company Admin</h1>
+      <p class="page-sub">Manage listed companies &amp; stock parameters (CF_1–CF_5)</p>
+    </div>
+    <a asp-action="AddCompany" class="btn-action">+ Add Company</a>
+  </div>
+
+  @if (!Model.Any())
+  {
+    <div class="empty-state" style="padding:4rem">
+      <div class="empty-icon">⚙</div>
+      <div>No companies yet. <a asp-action="AddCompany">Add the first one!</a></div>
+    </div>
+  }
+  else
+  {
+    <div class="admin-grid">
+      @foreach (var c in Model)
+      {
+        <div class="company-card">
+          <div class="company-header">
+            <div class="company-icon">@c.IconEmoji</div>
+            <div class="company-meta" style="flex:1">
+              <div class="company-name">@c.Name</div>
+              <div style="margin-top:3px">
+                <span class="sector-badge badge-@c.Sector.ToLower()">@c.Sector</span>
+              </div>
+            </div>
+            <span class="ticker">@c.Ticker</span>
+          </div>
+
+          <div style="font-size:12px;color:var(--text3);margin-bottom:.8rem;line-height:1.5">@c.Description</div>
+
+          <div class="company-stats">
+            <div class="c-stat">
+              <div class="c-stat-l">Price</div>
+              <div class="c-stat-v">$@c.CurrentPrice.ToString("F2")</div>
+            </div>
+            <div class="c-stat">
+              <div class="c-stat-l">Shares</div>
+              <div class="c-stat-v">@((c.TotalShares / 1_000_000.0).ToString("F1"))M</div>
+            </div>
+            <div class="c-stat">
+              <div class="c-stat-l">Max/User</div>
+              <div class="c-stat-v">@c.MaxSharesPerUser.ToString("N0")</div>
+            </div>
+          </div>
+
+          <div style="font-size:10px;color:var(--text3);margin-top:.6rem">
+            Modified by <span class="fingerprint-tag">@c.LastModifiedBy</span>
+            at @c.LastModifiedAt.ToString("yyyy-MM-dd HH:mm")
+          </div>
+
+          <div style="display:flex;gap:6px;margin-top:.8rem;justify-content:flex-end">
+            <a asp-action="EditCompany" asp-route-id="@c.Id"
+               class="btn-action secondary" style="padding:5px 12px;font-size:12px">Edit</a>
+            <form asp-action="DeleteCompany" method="post" style="display:inline"
+                  onsubmit="return confirm('Delete @c.Name (@c.Ticker)? This cannot be undone.')">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id" value="@c.Id" />
+              <button type="submit" class="btn-action danger" style="padding:5px 12px;font-size:12px">Delete</button>
+            </form>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

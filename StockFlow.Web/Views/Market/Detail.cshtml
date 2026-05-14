@@ -1,0 +1,274 @@
+```cshtml
+@model StockFlow.Application.DTOs.CompanyDto
+@{
+    ViewData["Title"] = Model.Ticker + " — " + Model.Name;
+}
+
+<div class="view-container">
+    <div class="page-head">
+        <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:2rem">@Model.IconEmoji</span>
+            <div>
+                <h1 class="page-title">@Model.Ticker <span style="font-size:1rem;color:var(--text2);font-weight:300">@Model.Name</span></h1>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                    <span class="sector-badge badge-@Model.Sector.ToLower()">@Model.Sector</span>
+                    <span class="live-indicator"><span class="live-dot"></span> Live Price</span>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px">
+            <a asp-controller="Trade" asp-action="Index" asp-route-ticker="@Model.Ticker" class="btn-action">Trade @Model.Ticker</a>
+            <a asp-controller="Market" asp-action="Index" class="btn-action secondary">← Market</a>
+        </div>
+    </div>
+
+    <div class="stats-row" style="margin-bottom:1.5rem">
+        <div class="stat-card">
+            <div class="stat-label">Current Price</div>
+            <div class="stat-val mono" id="live-price">$@Model.CurrentPrice.ToString("F2")</div>
+            <div class="stat-change neu">Live</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Initial Price</div>
+            <div class="stat-val mono">$@Model.InitialPrice.ToString("F2")</div>
+            <div class="stat-change neu">IPO</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Total Shares</div>
+            <div class="stat-val mono">@((Model.TotalShares / 1000000.0).ToString("F1"))M</div>
+            <div class="stat-change neu">Listed</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Available</div>
+            <div class="stat-val mono">@((Model.AvailableShares / 1000000.0).ToString("F1"))M</div>
+            <div class="stat-change neu">Tradeable</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Max per User</div>
+            <div class="stat-val mono">@Model.MaxSharesPerUser.ToString("N0")</div>
+            <div class="stat-change neu">Limit</div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.2rem;margin-bottom:1.5rem">
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <div class="card-title">Price History (CF_2)</div>
+                <div style="display:flex;gap:6px">
+                    <button class="filter-btn active" onclick="loadChart(7,this)">7D</button>
+                    <button class="filter-btn" onclick="loadChart(14,this)">14D</button>
+                    <button class="filter-btn" onclick="loadChart(30,this)">30D</button>
+                </div>
+            </div>
+
+            <div class="chart-wrap" style="height:280px">
+                <canvas id="priceChart" role="img" aria-label="Price history chart for @Model.Ticker">Price history data</canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title" style="margin-bottom:.8rem">Company Info (CF_3)</div>
+
+            <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:1rem">
+                @Model.Description
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--text3)">Ticker</span>
+                    <span class="ticker">@Model.Ticker</span>
+                </div>
+
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--text3)">Sector</span>
+                    <span class="sector-badge badge-@Model.Sector.ToLower()">@Model.Sector</span>
+                </div>
+
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--text3)">Market Cap</span>
+                    <span class="mono">
+                        $@((Model.CurrentPrice * Model.TotalShares / 1000000m).ToString("N0"))M
+                    </span>
+                </div>
+
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--text3)">Float</span>
+                    <span class="mono">
+                        @((Model.AvailableShares * 100m / Model.TotalShares).ToString("F1"))%
+                    </span>
+                </div>
+
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--text3)">Last Modified By</span>
+                    <span class="fingerprint-tag">@Model.LastModifiedBy</span>
+                </div>
+
+                <div style="display:flex;justify-content:space-between">
+                    <span style="color:var(--text3)">Modified At</span>
+                    <span class="mono" style="font-size:11px;color:var(--text2)">
+                        @Model.LastModifiedAt.ToString("yyyy-MM-dd HH:mm")
+                    </span>
+                </div>
+            </div>
+
+            <div style="margin-top:1.2rem">
+                <a asp-controller="Trade" asp-action="Index" asp-route-ticker="@Model.Ticker"
+                   class="btn-action" style="width:100%;text-align:center;display:block">
+                    Trade @Model.Ticker →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title" style="margin-bottom:.8rem">Recent Price Events</div>
+
+        <div class="tbl-wrap" style="border:none">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Price</th>
+                        <th>Volume</th>
+                        <th>Trigger</th>
+                    </tr>
+                </thead>
+
+                <tbody id="history-tbody">
+                    @if (ViewBag.History is IEnumerable<StockFlow.Application.DTOs.PriceHistoryDto> history)
+                    {
+                        @foreach (var h in history.OrderByDescending(x => x.RecordedAt).Take(20))
+                        {
+                            <tr>
+                                <td class="mono" style="font-size:11px;color:var(--text2)">
+                                    @h.RecordedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                                </td>
+
+                                <td class="price-cell">
+                                    $@h.Price.ToString("F4")
+                                </td>
+
+                                <td class="mono" style="font-size:12px">
+                                    @h.Volume.ToString("N0")
+                                </td>
+
+                                <td>
+                                    <span class="log-type @(h.Trigger == "buy" ? "lt-buy" : h.Trigger == "sell" ? "lt-sell" : "lt-sys")">
+                                        @h.Trigger.ToUpper()
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+    <script>
+        const companyId = @Model.Id;
+        let chartInst = null;
+
+        async function loadChart(days, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+
+        if (btn) btn.classList.add('active');
+
+        const res = await fetch(`/Market/PriceHistory?id=${companyId}&days=${days}`);
+        const history = await res.json();
+
+        const labels = history.map(h => {
+        const d = new Date(h.recordedAt);
+
+        return d.toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric'
+        }) + ' ' + d.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+        });
+        });
+
+        const prices = history.map(h => h.price);
+
+        const first = prices[0] ?? 0;
+        const last = prices[prices.length - 1] ?? 0;
+
+        const isUp = last >= first;
+
+        if (chartInst) chartInst.destroy();
+
+        chartInst = new Chart(document.getElementById('priceChart'), {
+        type: 'line',
+
+        data: {
+        labels,
+
+        datasets: [{
+        label: '@Model.Ticker Price',
+        data: prices,
+        borderColor: isUp ? '#4ade80' : '#f87171',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        backgroundColor: isUp
+        ? 'rgba(74,222,128,0.07)'
+        : 'rgba(248,113,113,0.07)',
+        tension: 0.4
+        }]
+        },
+
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        plugins: {
+        legend: {
+        display: false
+        }
+        },
+
+        scales: {
+        x: {
+        display: false
+        },
+
+        y: {
+        ticks: {
+        color: '#555b6e',
+        font: { size: 10 },
+        callback: v => '$' + v.toFixed(2)
+        },
+
+        grid: {
+        color: 'rgba(255,255,255,0.04)'
+        }
+        }
+        }
+        }
+        });
+        }
+
+        setInterval(async () => {
+        const res = await fetch(`/Trade/LivePrice?ticker=@Model.Ticker`);
+        const data = await res.json();
+
+        document.getElementById('live-price').textContent =
+        '$' + parseFloat(data.price).toFixed(2);
+        }, 5000);
+
+        loadChart(7, null);
+    </script>
+}
+```

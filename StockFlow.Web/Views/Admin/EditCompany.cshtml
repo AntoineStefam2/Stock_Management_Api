@@ -1,0 +1,69 @@
+@model StockFlow.Application.DTOs.CompanyUpdateDto
+@{ ViewData["Title"] = "Edit Company"; }
+
+<div class="view-container" style="max-width:620px">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Edit Company</h1>
+      <p class="page-sub">CF_5 — Update stock parameters &amp; company info</p>
+    </div>
+    <a asp-action="Companies" class="btn-action secondary">← Back</a>
+  </div>
+
+  <div class="card">
+    <form asp-action="EditCompany" asp-route-id="@ViewBag.CompanyId" method="post">
+      @Html.AntiForgeryToken()
+
+      <div asp-validation-summary="ModelOnly" class="auth-error auth-err-show"
+           style="@(ViewContext.ModelState.IsValid ? "display:none" : "display:block")"></div>
+
+      <div class="field">
+        <label>Company Name</label>
+        <input asp-for="Name" class="form-input" placeholder="Acme Corp" />
+        <span asp-validation-for="Name" class="field-error"></span>
+      </div>
+
+      <div class="field">
+        <label>Sector</label>
+        <select asp-for="Sector" class="form-input">
+          <option value="Technology">Technology</option>
+          <option value="Finance">Finance</option>
+          <option value="Energy">Energy</option>
+          <option value="Healthcare">Healthcare</option>
+          <option value="Consumer">Consumer</option>
+          <option value="Industrial">Industrial</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Description</label>
+        <textarea asp-for="Description" class="form-input" rows="3"
+                  style="resize:vertical" placeholder="Company description..."></textarea>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Current Price ($)</label>
+          <input asp-for="CurrentPrice" class="form-input" type="number" step="0.0001" min="0.01" />
+          <span asp-validation-for="CurrentPrice" class="field-error"></span>
+        </div>
+        <div class="field">
+          <label>Available Shares</label>
+          <input asp-for="AvailableShares" class="form-input" type="number" min="0" />
+          <span asp-validation-for="AvailableShares" class="field-error"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Max Shares per User</label>
+        <input asp-for="MaxSharesPerUser" class="form-input" type="number" min="1" />
+        <span asp-validation-for="MaxSharesPerUser" class="field-error"></span>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.2rem">
+        <a asp-action="Companies" class="btn-action secondary">Cancel</a>
+        <button type="submit" class="btn-action">Update Company</button>
+      </div>
+    </form>
+  </div>
+</div>

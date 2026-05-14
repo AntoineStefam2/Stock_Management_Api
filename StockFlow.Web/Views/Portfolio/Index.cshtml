@@ -1,0 +1,57 @@
+@model IEnumerable<StockFlow.Application.DTOs.PortfolioItemDto>
+@{ ViewData["Title"] = "Portfolio"; decimal portVal = ViewBag.PortfolioValue ?? 0m; }
+
+<div class="view-container">
+  <div class="page-head">
+    <div><h1 class="page-title">Portfolio</h1><p class="page-sub">Your holdings & valuation</p></div>
+    <div style="display:flex;gap:8px">
+      <a asp-controller="Portfolio" asp-action="ExportCsv" class="btn-action secondary">↓ Export CSV</a>
+      <a asp-controller="Trade" asp-action="Index" class="btn-action">+ Buy More</a>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Cash</div><div class="stat-val mono">$@((ViewBag.CashBalance as decimal? ?? 0m).ToString("N2"))</div><div class="stat-change neu">Available</div></div>
+    <div class="stat-card"><div class="stat-label">Portfolio</div><div class="stat-val mono">$@portVal.ToString("N2")</div><div class="stat-change pos">Invested</div></div>
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-val mono">$@((ViewBag.TotalWealth as decimal? ?? 0m).ToString("N2"))</div><div class="stat-change pos">Net worth</div></div>
+    <div class="stat-card"><div class="stat-label">Positions</div><div class="stat-val mono">@Model.Count()</div><div class="stat-change neu">Holdings</div></div>
+  </div>
+
+  @if (Model.Any())
+  {
+    <div class="port-grid">
+      @foreach (var h in Model)
+      {
+        var pct = portVal > 0 ? h.CurrentValue / portVal * 100 : 0;
+        var plCls = h.ProfitLossPct >= 0 ? "pos" : "neg";
+        var sign = h.ProfitLossPct >= 0 ? "+" : "";
+        <div class="holding-card">
+          <div class="holding-top">
+            <div>
+              <div class="holding-ticker">@h.Ticker</div>
+              <div class="holding-name">@h.CompanyName</div>
+              <span class="sector-badge badge-@h.Sector.ToLower()">@h.Sector</span>
+            </div>
+            <div style="text-align:right">
+              <div class="holding-qty">@h.Quantity shares</div>
+              <div class="holding-val mono">$@h.CurrentValue.ToString("N2")</div>
+              <div class="@plCls mono" style="font-size:12px">@sign@h.ProfitLossPct.ToString("F2")%</div>
+            </div>
+          </div>
+          <div class="holding-bar-wrap"><div class="holding-bar" style="width:@(Math.Min(100,pct).ToString("F1"))%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px">
+            <span>@pct.ToString("F1")% of portfolio</span>
+            <span>Avg cost: $@h.AverageCost.ToString("F2")</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+  else
+  {
+    <div class="empty-state" style="padding:4rem">
+      <div class="empty-icon">◧</div>
+      <div>No holdings yet. <a asp-controller="Trade" asp-action="Index">Start trading!</a></div>
+    </div>
+  }
+</div>

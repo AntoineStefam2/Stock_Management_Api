@@ -1,0 +1,151 @@
+```cshtml
+@model IEnumerable<StockFlow.Application.DTOs.CompanyDto>
+@{
+    ViewData["Title"] = "Market";
+}
+
+<div class="view-container">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Market</h1>
+            <p class="page-sub">All listed companies & live prices</p>
+        </div>
+
+        <a asp-controller="Trade" asp-action="Index" class="btn-action">
+            Trade →
+        </a>
+    </div>
+
+    <form method="get" asp-action="Index">
+        <div class="search-bar">
+            <span class="search-icon">⌕</span>
+
+            <input name="q"
+                   value="@ViewBag.Query"
+                   type="text"
+                   placeholder="Search by company, ticker, sector…" />
+
+            <button type="submit"
+                    class="btn-action"
+                    style="padding:5px 14px;font-size:12px">
+                Search
+            </button>
+        </div>
+
+        <div class="filters">
+            @foreach (var s in new[] {
+        "All",
+        "Technology",
+        "Finance",
+        "Energy",
+        "Healthcare",
+        "Consumer",
+        "Industrial"
+      })
+            {
+                <a class="filter-btn @(
+                   ViewBag.Sector == s ||
+                   (s == "All" && string.IsNullOrEmpty(ViewBag.Sector as string))
+                     ? "active"
+                     : ""
+                         )"
+                   asp-action="Index"
+                   asp-route-sector="@(s == "All" ? "" : s)"
+                   asp-route-q="@ViewBag.Query">
+
+                    @s
+                </a>
+            }
+        </div>
+    </form>
+
+    <div class="tbl-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticker</th>
+                    <th>Company</th>
+                    <th>Sector</th>
+                    <th>Price</th>
+                    <th>Change</th>
+                    <th>Avail. Shares</th>
+                    <th>Max/User</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    var summary =
+                      ViewBag.Summary is Dictionary<string, StockFlow.Application.DTOs.MarketSummaryDto> d
+                      && d.ContainsKey(c.Ticker)
+                        ? d[c.Ticker]
+                        : null;
+
+                    var chg = summary?.ChangeAmount ?? 0;
+                    var chgPct = summary?.ChangePct ?? 0;
+
+                    var cls = chg >= 0 ? "pos" : "neg";
+                    var sign = chg >= 0 ? "+" : "";
+
+                    <tr>
+                        <td>
+                            <span class="ticker">@c.Ticker</span>
+                        </td>
+
+                        <td>
+                            @c.IconEmoji @c.Name
+                        </td>
+
+                        <td>
+                            <span class="sector-badge badge-@c.Sector.ToLower()">
+                                @c.Sector
+                            </span>
+                        </td>
+
+                        <td class="price-cell">
+                            $@c.CurrentPrice.ToString("F2")
+                        </td>
+
+                        <td class="change-cell @cls">
+                            @sign@chg.ToString("F2")
+                            (
+                            @sign@chgPct.ToString("F2")%
+                            )
+                        </td>
+
+                        <td class="mono" style="font-size:12px">
+                            @((c.AvailableShares / 1000000.0).ToString("F1"))M
+                        </td>
+
+                        <td class="mono" style="font-size:12px">
+                            @c.MaxSharesPerUser.ToString("N0")
+                        </td>
+
+                        <td>
+                            <a asp-controller="Trade"
+                               asp-action="Index"
+                               asp-route-ticker="@c.Ticker"
+                               class="btn-action"
+                               style="padding:5px 12px;font-size:12px">
+
+                                Trade
+                            </a>
+
+                            <a asp-controller="Market"
+                               asp-action="Detail"
+                               asp-route-ticker="@c.Ticker"
+                               class="btn-action secondary"
+                               style="padding:5px 10px;font-size:12px;margin-left:4px">
+
+                                Chart
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+```

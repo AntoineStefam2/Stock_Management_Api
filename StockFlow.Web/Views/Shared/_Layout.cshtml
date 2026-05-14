@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>@ViewData["Title"] — StockFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:wght@300;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="~/css/stockflow.css" asp-append-version="true" />
+</head>
+<body>
+  <div id="app-shell">
+    <!-- Top bar -->
+    <header class="topbar">
+      <a asp-controller="Home" asp-action="Index" class="topbar-logo">Stock<span>Flow</span></a>
+      <span class="live-indicator"><span class="live-dot"></span> LIVE</span>
+      <div class="topbar-right">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+          <span class="balance-chip" id="balance-chip">$@(ViewBag.Balance ?? "—")</span>
+          <div class="user-pill">
+            <div class="user-avatar">@(User.Identity.Name?.Substring(0,1).ToUpper() ?? "?")</div>
+            <span>@User.Identity.Name</span>
+            @if (User.IsInRole("Admin"))
+            {
+              <span class="role-badge">Admin</span>
+            }
+          </div>
+          <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline">
+            @Html.AntiForgeryToken()
+            <button class="logout-btn" type="submit">Sign Out</button>
+          </form>
+        }
+      </div>
+    </header>
+
+    <div class="layout-body">
+      <!-- Sidebar -->
+      @if (User.Identity?.IsAuthenticated == true)
+      {
+        <nav class="sidebar">
+          <div class="nav-section">Trading</div>
+          <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+             asp-controller="Home" asp-action="Index"><span class="icon">⬡</span>Dashboard</a>
+          <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Market" ? "active" : "")"
+             asp-controller="Market" asp-action="Index"><span class="icon">◈</span>Market</a>
+          <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Trade" ? "active" : "")"
+             asp-controller="Trade" asp-action="Index"><span class="icon">⇆</span>Trade</a>
+
+          <div class="nav-section">Account</div>
+          <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Portfolio" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+             asp-controller="Portfolio" asp-action="Index"><span class="icon">◧</span>Portfolio</a>
+          <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Portfolio" && ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")"
+             asp-controller="Portfolio" asp-action="History"><span class="icon">≡</span>History</a>
+
+          <div class="nav-section">Analytics</div>
+          <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active" : "")"
+             asp-controller="Reports" asp-action="Index"><span class="icon">◫</span>Reports</a>
+
+          @if (User.IsInRole("Admin"))
+          {
+            <div class="nav-section">Administration</div>
+            <a class="nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Companies" ? "active" : "")"
+               asp-controller="Admin" asp-action="Companies"><span class="icon">⚙</span>Companies</a>
+            <a class="nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "active" : "")"
+               asp-controller="Admin" asp-action="Users"><span class="icon">◉</span>Users</a>
+          }
+        </nav>
+      }
+
+      <!-- Main content -->
+      <main class="main-content">
+        @if (TempData["Success"] != null)
+        {
+          <div class="alert alert-success">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+          <div class="alert alert-error">@TempData["Error"]</div>
+        }
+        @RenderBody()
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="~/js/stockflow.js" asp-append-version="true"></script>
+  @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
