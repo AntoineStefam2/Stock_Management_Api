@@ -1,0 +1,56 @@
+@model IEnumerable<StockFlow.Application.DTOs.UserDto>
+@{ ViewData["Title"] = "User Management"; }
+
+<div class="view-container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">User Management</h1>
+      <p class="page-sub">All registered accounts (CF_6)</p>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Balance</th>
+          <th>Trades</th>
+          <th>Joined</th>
+          <th>Last Modified By</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (Model.Any())
+        {
+          @foreach (var u in Model)
+          {
+            <tr>
+              <td class="ticker">@u.UserName</td>
+              <td>@u.FullName</td>
+              <td style="font-size:12px;color:var(--text2)">@u.Email</td>
+              <td>
+                <span class="sector-badge @(u.Role == "Admin" ? "badge-technology" : "badge-healthcare")">
+                  @u.Role
+                </span>
+              </td>
+              <td class="price-cell">$@u.Balance.ToString("N2")</td>
+              <td class="mono">@u.TotalTrades</td>
+              <td class="mono" style="font-size:11px;color:var(--text2)">@u.CreatedAt.ToString("yyyy-MM-dd")</td>
+              <td><span class="fingerprint-tag">@u.LastModifiedBy</span></td>
+            </tr>
+          }
+        }
+        else
+        {
+          <tr>
+            <td colspan="8" style="text-align:center;padding:3rem;color:var(--text3)">No users found.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

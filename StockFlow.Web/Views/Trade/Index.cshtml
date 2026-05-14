@@ -1,0 +1,161 @@
+@model IEnumerable<StockFlow.Application.DTOs.CompanyDto>
+@{
+    ViewData["Title"] = "Trade";
+    var selTicker = ViewBag.SelectedTicker as string;
+    var companiesJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Select(c => new { id = c.Id, ticker = c.Ticker, name = c.Name, price = c.CurrentPrice }));
+}
+<div class="view-container">
+  <div class="page-head">
+    <div><h1 class="page-title">Trade</h1><p class="page-sub">Place buy &amp; sell orders (CF_7)</p></div>
+  </div>
+  <div class="trade-grid">
+    <div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:.8rem">All Stocks <span class="live-indicator" style="margin-left:.5rem;font-size:10px"><span class="live-dot"></span> Live</span></div>
+        <div class="tbl-wrap" style="border:none">
+          <table>
+            <thead><tr><th>Ticker</th><th>Company</th><th>Price</th><th></th></tr></thead>
+            <tbody>
+              @foreach (var c in Model)
+              {
+                var nameSafe = c.Name.Replace("'", "\\'");
+                <tr id="row-@c.Ticker" onclick="selectStock(@c.Id,'@c.Ticker','@nameSafe',@c.CurrentPrice.ToString("F4", System.Globalization.CultureInfo.InvariantCulture))" style="cursor:pointer">
+                  <td><span class="ticker">@c.Ticker</span></td>
+                  <td>@c.IconEmoji @c.Name</td>
+                  <td class="price-cell" id="price-@c.Ticker">$@c.CurrentPrice.ToString("F2")</td>
+                  <td><button type="button" class="btn-action" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();selectStock(@c.Id,'@c.Ticker','@nameSafe',@c.CurrentPrice.ToString("F4", System.Globalization.CultureInfo.InvariantCulture))">Select</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" id="chart-card" style="margin-top:1.2rem;display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">
+          <div class="card-title" id="chart-label">Price History</div>
+          <div style="display:flex;gap:5px">
+            <button type="button" class="filter-btn active" onclick="loadChart(7,this)">7D</button>
+            <button type="button" class="filter-btn" onclick="loadChart(14,this)">14D</button>
+            <button type="button" class="filter-btn" onclick="loadChart(30,this)">30D</button>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:200px"><canvas id="tradeChart" role="img" aria-label="Price history">Price history</canvas></div>
+      </div>
+    </div>
+    <div class="trade-panel">
+      <div class="card-title" style="margin-bottom:.8rem">Order Panel</div>
+      <div class="trade-tabs">
+        <button type="button" class="trade-tab buy active" id="tab-buy" onclick="setTradeType('Buy')">Buy</button>
+        <button type="button" class="trade-tab sell" id="tab-sell" onclick="setTradeType('Sell')">Sell</button>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div class="stock-select-label">Selected Stock</div>
+        <div class="stock-select-display">
+          <span id="sel-ticker" class="stock-ticker-big">—</span>
+          <span id="sel-name" class="stock-name-sm" style="flex:1">Choose from the list</span>
+          <span id="sel-price" class="mono" style="font-size:14px">—</span>
+        </div>
+      </div>
+      <form asp-controller="Trade" asp-action="PlaceOrder" method="post" id="order-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="order-CompanyId" name="CompanyId" value="0" />
+        <input type="hidden" id="order-Type" name="Type" value="Buy" />
+        <div style="margin-bottom:1rem">
+          <div class="stock-select-label">Quantity</div>
+          <div class="qty-input-wrap">
+            <button type="button" class="qty-btn" onclick="adjQty(-1)">−</button>
+            <input class="qty-input" id="qty" name="Quantity" type="number" min="1" value="1" oninput="updateSummary()" />
+            <button type="button" class="qty-btn" onclick="adjQty(1)">+</button>
+          </div>
+        </div>
+        <div class="order-summary">
+          <div class="order-row"><span>Price / share</span><span id="s-price">—</span></div>
+          <div class="order-row"><span>Quantity</span><span id="s-qty">—</span></div>
+          <div class="order-row"><span>Commission (0.1%)</span><span id="s-fee">—</span></div>
+          <div class="order-row total"><span>Total</span><span id="s-total">—</span></div>
+        </div>
+        <button type="submit" id="exec-btn" class="exec-btn buy" disabled>Select a Stock First</button>
+      </form>
+      <div style="margin-top:.8rem;font-size:11px;color:var(--text3);text-align:center">
+        Balance: <span class="mono">$@((ViewBag.UserBalance as decimal? ?? 0m).ToString("N2"))</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const COMPANIES = @Html.Raw(companiesJson);
+let curId=0,curTicker=null,curPrice=0,tradeType='Buy',chartInst=null;
+
+function selectStock(id,ticker,name,price){
+  curId=id;curTicker=ticker;curPrice=parseFloat(price);
+  document.getElementById('sel-ticker').textContent=ticker;
+  document.getElementById('sel-name').textContent=name;
+  document.getElementById('sel-price').textContent='$'+curPrice.toFixed(2);
+  document.getElementById('order-CompanyId').value=id;
+  document.querySelectorAll('#stock-list-tbody tr').forEach(r=>r.style.background='');
+  var row=document.getElementById('row-'+ticker);
+  if(row)row.style.background='rgba(34,211,238,0.05)';
+  document.getElementById('chart-card').style.display='block';
+  document.getElementById('chart-label').textContent=ticker+' — Price History';
+  updateSummary();loadChart(7,document.querySelector('.filter-btn.active'));
+}
+
+function setTradeType(t){
+  tradeType=t;document.getElementById('order-Type').value=t;
+  document.getElementById('tab-buy').classList.toggle('active',t==='Buy');
+  document.getElementById('tab-sell').classList.toggle('active',t==='Sell');
+  var btn=document.getElementById('exec-btn');
+  btn.className='exec-btn '+t.toLowerCase();updateSummary();
+}
+
+function adjQty(d){var el=document.getElementById('qty');el.value=Math.max(1,parseInt(el.value||1)+d);updateSummary();}
+
+function updateSummary(){
+  if(!curTicker)return;
+  var qty=parseInt(document.getElementById('qty').value)||1;
+  var fee=+(curPrice*qty*0.001).toFixed(2);
+  var total=tradeType==='Buy'?curPrice*qty+fee:curPrice*qty-fee;
+  document.getElementById('s-price').textContent='$'+curPrice.toFixed(2);
+  document.getElementById('s-qty').textContent=qty;
+  document.getElementById('s-fee').textContent='$'+fee.toFixed(2);
+  document.getElementById('s-total').textContent='$'+total.toFixed(2);
+  var btn=document.getElementById('exec-btn');
+  btn.disabled=false;
+  btn.textContent=tradeType+' '+qty+' share'+(qty>1?'s':'')+' of '+curTicker;
+  btn.className='exec-btn '+tradeType.toLowerCase();
+}
+
+async function loadChart(days,btn){
+  if(!curId)return;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  try{
+    var res=await fetch('/Market/PriceHistory?id='+curId+'&days='+days);
+    var data=await res.json();
+    if(!data||!data.length)return;
+    var prices=data.map(h=>parseFloat(h.price));
+    var labels=data.map(h=>{var d=new Date(h.recordedAt);return d.toLocaleDateString([],{month:'short',day:'numeric'})+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});});
+    var isUp=prices[prices.length-1]>=prices[0];
+    var color=isUp?'#4ade80':'#f87171';
+    if(chartInst)chartInst.destroy();
+    chartInst=new Chart(document.getElementById('tradeChart'),{type:'line',data:{labels,datasets:[{label:curTicker,data:prices,borderColor:color,borderWidth:2,pointRadius:0,fill:true,backgroundColor:isUp?'rgba(74,222,128,0.07)':'rgba(248,113,113,0.07)',tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{ticks:{color:'#555b6e',font:{size:10},callback:v=>'$'+v.toFixed(2)},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+  }catch(e){console.warn('Chart error',e);}
+}
+
+setInterval(async()=>{
+  if(!curTicker)return;
+  try{var res=await fetch('/Trade/LivePrice?ticker='+curTicker);var d=await res.json();curPrice=parseFloat(d.price);document.getElementById('sel-price').textContent='$'+curPrice.toFixed(2);var el=document.getElementById('price-'+curTicker);if(el)el.textContent='$'+curPrice.toFixed(2);updateSummary();}catch(e){}
+},5000);
+</script>
+@if (!string.IsNullOrEmpty(selTicker))
+{
+<script>
+var _pre=COMPANIES.find(c=>c.ticker==='@selTicker');
+if(_pre)selectStock(_pre.id,_pre.ticker,_pre.name,_pre.price);
+</script>
+}
+}

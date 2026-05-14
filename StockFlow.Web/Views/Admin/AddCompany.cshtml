@@ -1,0 +1,76 @@
+@model StockFlow.Application.DTOs.CompanyCreateDto
+@{ ViewData["Title"] = "Add Company"; }
+
+<div class="view-container" style="max-width:620px">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Add Company</h1>
+      <p class="page-sub">CF_1 — Define new company &amp; initial stock parameters</p>
+    </div>
+    <a asp-action="Companies" class="btn-action secondary">← Back</a>
+  </div>
+
+  <div class="card">
+    <form asp-action="AddCompany" method="post">
+      @Html.AntiForgeryToken()
+
+      <div asp-validation-summary="ModelOnly" class="auth-error"
+           style="@(!ViewContext.ModelState.IsValid ? "display:block" : "display:none")"></div>
+
+      <div class="field">
+        <label>Company Name</label>
+        <input asp-for="Name" class="form-input" placeholder="e.g. Acme Corp" />
+        <span asp-validation-for="Name" class="field-error"></span>
+      </div>
+
+      <div class="field">
+        <label>Ticker Symbol</label>
+        <input asp-for="Ticker" class="form-input" placeholder="e.g. ACME" maxlength="8"
+               oninput="this.value=this.value.toUpperCase()" />
+        <span asp-validation-for="Ticker" class="field-error"></span>
+      </div>
+
+      <div class="field">
+        <label>Sector</label>
+        <select asp-for="Sector" class="form-input">
+          <option value="Technology">Technology</option>
+          <option value="Finance">Finance</option>
+          <option value="Energy">Energy</option>
+          <option value="Healthcare">Healthcare</option>
+          <option value="Consumer">Consumer</option>
+          <option value="Industrial">Industrial</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Description</label>
+        <textarea asp-for="Description" class="form-input" rows="3"
+                  style="resize:vertical" placeholder="Brief company description..."></textarea>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Initial Price ($)</label>
+          <input asp-for="InitialPrice" class="form-input" type="number" step="0.01" min="0.01" value="100" />
+          <span asp-validation-for="InitialPrice" class="field-error"></span>
+        </div>
+        <div class="field">
+          <label>Total Shares</label>
+          <input asp-for="TotalShares" class="form-input" type="number" min="1" value="1000000" />
+          <span asp-validation-for="TotalShares" class="field-error"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Max Shares per User</label>
+        <input asp-for="MaxSharesPerUser" class="form-input" type="number" min="1" value="10000" />
+        <span asp-validation-for="MaxSharesPerUser" class="field-error"></span>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.2rem">
+        <a asp-action="Companies" class="btn-action secondary">Cancel</a>
+        <button type="submit" class="btn-action">Save Company</button>
+      </div>
+    </form>
+  </div>
+</div>

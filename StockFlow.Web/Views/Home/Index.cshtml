@@ -1,0 +1,112 @@
+@model StockFlow.Application.DTOs.DashboardDto
+@{ ViewData["Title"] = "Dashboard"; }
+
+<div class="view-container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-sub">Market overview & your positions</p>
+    </div>
+    <a asp-controller="Trade" asp-action="Index" class="btn-action">+ New Order</a>
+  </div>
+
+  <!-- Stats (CF_9) -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Cash Balance</div>
+      <div class="stat-val mono">$@Model.CashBalance.ToString("N2")</div>
+      <div class="stat-change neu">Available</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Portfolio Value</div>
+      <div class="stat-val mono">$@Model.PortfolioValue.ToString("N2")</div>
+      <div class="stat-change pos">Invested</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Wealth</div>
+      <div class="stat-val mono">$@Model.TotalWealth.ToString("N2")</div>
+      <div class="stat-change pos">Net worth</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Trades</div>
+      <div class="stat-val mono">@Model.TotalTrades</div>
+      <div class="stat-change neu">Lifetime</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Holdings</div>
+      <div class="stat-val mono">@Model.HoldingsCount</div>
+      <div class="stat-change neu">Positions</div>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <!-- Price chart -->
+    <div class="card">
+      <div class="card-title">Market Index (Simulated)</div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="marketChart" role="img" aria-label="Market index trend chart">Market index data</canvas>
+      </div>
+    </div>
+
+    <!-- Top movers -->
+    <div class="card">
+      <div class="card-title">Top Movers</div>
+      @foreach (var m in Model.TopMovers)
+      {
+        var cls = m.ChangePct >= 0 ? "pos" : "neg";
+        var sign = m.ChangePct >= 0 ? "+" : "";
+        <div class="mover-row">
+          <span class="ticker">@m.Ticker</span>
+          <span class="text-muted" style="font-size:12px">@m.Name.Substring(0, Math.Min(m.Name.Length, 14))</span>
+          <span class="mono" style="font-size:13px">$@m.CurrentPrice.ToString("F2")</span>
+          <span class="@cls mono" style="font-size:12px">@sign@m.ChangePct.ToString("F2")%</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Recent activity -->
+  <div class="card" style="margin-top:1.2rem">
+    <div class="card-title">Recent Activity</div>
+    @if (Model.RecentTransactions.Any())
+    {
+      <div class="tbl-wrap" style="border:none">
+        <table>
+          <thead><tr><th>Time</th><th>Type</th><th>Ticker</th><th>Qty</th><th>Price</th><th>Total</th><th>Fingerprint</th></tr></thead>
+          <tbody>
+            @foreach (var t in Model.RecentTransactions.Take(8))
+            {
+              <tr>
+                <td class="mono" style="font-size:11px;color:var(--text2)">@t.ExecutedAt.ToString("HH:mm:ss")</td>
+                <td><span class="log-type lt-@t.Type.ToLower()">@t.Type.ToUpper()</span></td>
+                <td class="ticker">@t.Ticker</td>
+                <td class="mono">@t.Quantity</td>
+                <td class="price-cell">$@t.PricePerShare.ToString("F2")</td>
+                <td class="price-cell">$@t.TotalAmount.ToString("F2")</td>
+                <td><span class="fingerprint-tag">@t.Fingerprint</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    else
+    {
+      <div class="empty-state"><div>No activity yet. <a asp-controller="Trade" asp-action="Index">Start trading!</a></div></div>
+    }
+  </div>
+</div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  const labels = Array.from({length:20},(_,i)=>i+1);
+  let v = 10000;
+  const data = labels.map(()=>{v+=(Math.random()-.46)*80;return Math.round(v);});
+  new Chart(document.getElementById('marketChart'),{
+    type:'line',
+    data:{labels,datasets:[{label:'Index',data,borderColor:'#4ade80',borderWidth:2,pointRadius:0,fill:true,backgroundColor:'rgba(74,222,128,0.07)',tension:0.4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{ticks:{color:'#555b6e',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}
+  });
+</script>
+}

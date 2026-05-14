@@ -1,0 +1,40 @@
+@model IEnumerable<StockFlow.Application.DTOs.TransactionDto>
+@{ ViewData["Title"] = "Transaction History"; }
+
+<div class="view-container">
+  <div class="page-head">
+    <div><h1 class="page-title">Transaction History</h1><p class="page-sub">Full audit log with fingerprints (CF_12)</p></div>
+    <a asp-controller="Portfolio" asp-action="ExportCsv" class="btn-action secondary">↓ Export CSV</a>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Time</th><th>Type</th><th>Ticker</th><th>Company</th><th>Qty</th><th>Price</th><th>Commission</th><th>Total</th><th>Fingerprint (CF_12)</th></tr>
+      </thead>
+      <tbody>
+        @if (Model.Any())
+        {
+          @foreach (var t in Model)
+          {
+            <tr>
+              <td class="mono" style="font-size:11px;color:var(--text2)">@t.ExecutedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+              <td><span class="log-type lt-@t.Type.ToLower()">@t.Type.ToUpper()</span></td>
+              <td class="ticker">@t.Ticker</td>
+              <td style="font-size:13px">@t.CompanyName</td>
+              <td class="mono">@t.Quantity</td>
+              <td class="price-cell">$@t.PricePerShare.ToString("F4")</td>
+              <td class="mono" style="font-size:12px;color:var(--text2)">$@t.Commission.ToString("F4")</td>
+              <td class="price-cell">$@t.TotalAmount.ToString("F2")</td>
+              <td><span class="fingerprint-tag">@t.Fingerprint</span></td>
+            </tr>
+          }
+        }
+        else
+        {
+          <tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--text3)">No transactions yet. <a asp-controller="Trade" asp-action="Index">Place your first order!</a></td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

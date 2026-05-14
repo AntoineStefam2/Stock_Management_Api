@@ -1,0 +1,58 @@
+@model StockFlow.Application.DTOs.LoginDto
+@{ ViewData["Title"] = "Sign In"; Layout = null; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — StockFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:wght@600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="~/css/stockflow.css" />
+</head>
+<body class="auth-body">
+  <div class="auth-brand">
+    <div class="auth-logo">Stock<span>Flow</span></div>
+    <div class="auth-subtitle">Institutional-grade trading platform</div>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <span class="auth-tab active">Sign In</span>
+      <a asp-action="Register" class="auth-tab">Register</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+      <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <div asp-validation-summary="All" class="auth-error @(!ViewContext.ModelState.IsValid ? "auth-err-show" : "")"></div>
+
+    <form asp-action="Login" method="post">
+      @Html.AntiForgeryToken()
+      <input type="hidden" name="ReturnUrl" value="@ViewBag.ReturnUrl" />
+
+      <div class="field">
+        <label>Username</label>
+        <input asp-for="UserName" class="form-input" placeholder="demo" autocomplete="username" />
+        <span asp-validation-for="UserName" class="field-error"></span>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input asp-for="Password" type="password" class="form-input" placeholder="••••••" autocomplete="current-password" />
+        <span asp-validation-for="Password" class="field-error"></span>
+      </div>
+
+      <button type="submit" class="btn-primary">Sign In →</button>
+    </form>
+
+    <div class="auth-hint">
+      Demo: <span class="hint-cred">demo / demo</span>
+      &nbsp;|&nbsp;
+      Admin: <span class="hint-cred hint-admin">admin / admin</span>
+    </div>
+  </div>
+</body>
+</html>
